@@ -1,0 +1,15 @@
+sudo: required
+language: c
+services:
+  - docker
+script:
+  - make
+deploy:
+  provider: pages
+  skip_cleanup: true
+  local_dir: dist/
+  fqdn: mqtt.vx-labs.net
+  github_token: $GITHUB_TOKEN
+  on:
+    branch: master
+
