@@ -36,6 +36,7 @@ const store = new Vuex.Store({
     },
     sessions: [],
     subscriptions: [],
+    peers: [],
   },
   mutations: {
     reset_sessions(state) {
@@ -71,6 +72,21 @@ const store = new Vuex.Store({
     set_mqtt_connection_offline(state) {
       state.connection.online = false;
       state.connection.pending = false;
+    },
+    create_peer(state, peer) {
+      const existing = state.peers.findIndex(s => s.ID === peer.ID);
+      if (existing === -1) {
+        state.peers.push(peer);
+        return;
+      }
+      state.peers[existing] = peer;
+    },
+    delete_peer(state, peer) {
+      const existing = state.peers.findIndex(s => s.ID === peer);
+      if (existing === -1) {
+        return;
+      }
+      state.peers = state.peers.filter(s => s.ID !== peer);
     },
     create_session(state, session) {
       const existing = state.sessions.findIndex(s => s.ID === session.ID);
@@ -122,11 +138,16 @@ const store = new Vuex.Store({
           reject('client not connected');
         }
         const session = state.connection.session;
-        session.publish(topic, payload, {
-          qos: 1,
-        }, () => {
-          resolve();
-        });
+        session.publish(
+          topic,
+          payload,
+          {
+            qos: 1,
+          },
+          () => {
+            resolve();
+          },
+        );
       });
     },
     SelectSession({ commit }, sessionID) {
@@ -163,6 +184,7 @@ const store = new Vuex.Store({
       mqttSession.on('message', (topic, payload) => {
         const sessionPrefix = '$SYS/sessions/';
         const subscriptionPrefix = '$SYS/subscriptions/';
+        const peersPrefix = '$SYS/peers/';
         if (topic.startsWith(sessionPrefix)) {
           if (payload.length > 0) {
             try {
@@ -201,10 +223,23 @@ const store = new Vuex.Store({
             const id = topic.slice(subscriptionPrefix.length);
             commit('delete_subscription', id);
           }
+        } else if (topic.startsWith(peersPrefix)) {
+          if (payload.length > 0) {
+            try {
+              const peer = JSON.parse(payload);
+              commit('create_peer', peer);
+            } catch (err) {
+              console.log(`failed to parse payload: ${payload}`);
+            }
+          } else {
+            const id = topic.slice(subscriptionPrefix.length);
+            commit('delete_peer', id);
+          }
         }
       });
-      mqttSession.subscribe('$SYS/sessions/+', { qos: 1});
-      mqttSession.subscribe('$SYS/subscriptions/+', { qos: 1});
+      mqttSession.subscribe('$SYS/sessions/+', { qos: 1 });
+      mqttSession.subscribe('$SYS/subscriptions/+', { qos: 1 });
+      mqttSession.subscribe('$SYS/peers/+', { qos: 1 });
       commit('set_mqtt_session', mqttSession);
     },
   },
@@ -225,6 +260,9 @@ const store = new Vuex.Store({
           return 0;
         }
       });
+    },
+    peers: state => {
+      return state.peers
     },
     subscriptions: state => state.subscriptions,
     subscriptionsBySession: state => id =>
