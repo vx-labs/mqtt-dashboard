@@ -5,6 +5,7 @@
       <td>{{ props.item.Tenant }}</td>
       <td>{{ props.item.ClientID }}</td>
       <td>{{ getTimeFromNow(props.item.Created) }}</td>
+      <td>{{ props.item.RemoteAddress }}</td>
       <td>{{ props.item.Transport }}</td>
       <td>{{ sessionsSubscriptionsCount(props.item.ID) }}</td>
       <td v-if="hasWill(props.item)">{{ props.item.WillTopic }} ← {{ props.item.WillPayload }}</td>
@@ -40,6 +41,7 @@ export default Vue.extend({
         { text: "Tenant", value: "tenant" },
         { text: "Client ID", value: "clientId" },
         { text: "Uptime", value: "uptime" },
+        { text: "Remote Address", value: "remote_addr" },
         { text: "Transport", value: "transport" },
         { text: "Subscriptions", value: "subscriptions" },
         { text: "LWT", value: "lwt" },
