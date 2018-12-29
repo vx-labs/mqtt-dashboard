@@ -79,7 +79,7 @@ const store = new Vuex.Store({
         state.peers.push(peer);
         return;
       }
-      state.peers[existing] = peer;
+      Vue.set(state.peers, existing, peer);
     },
     delete_peer(state, peer) {
       const existing = state.peers.findIndex(s => s.ID === peer);
@@ -94,7 +94,7 @@ const store = new Vuex.Store({
         state.sessions.push(session);
         return;
       }
-      state.sessions[existing] = session;
+      Vue.set(state.sessions, existing,  session);
     },
     delete_session(state, session) {
       const existing = state.sessions.findIndex(s => s.ID === session);
@@ -111,7 +111,7 @@ const store = new Vuex.Store({
         state.subscriptions.push(subscription);
         return;
       }
-      state.subscriptions[existing] = subscription;
+      Vue.set(state.subscriptions, existing, subscription);
     },
     delete_subscription(state, subscription) {
       const existing = state.subscriptions.findIndex(
@@ -262,7 +262,7 @@ const store = new Vuex.Store({
       });
     },
     peers: state => {
-      return state.peers
+      return state.peers.sort();
     },
     subscriptions: state => state.subscriptions,
     subscriptionsBySession: state => id =>
