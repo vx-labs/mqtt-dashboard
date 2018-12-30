@@ -4,6 +4,7 @@
       <td>{{ formatID(props.item.ID) }}</td>
       <td>{{ props.item.MeshID }}</td>
       <td>{{ props.item.Hostname }}</td>
+      <td>{{ props.item.Services.join(', ') }}</td>
       <td>{{ props.item.ComputeUsage.Goroutines }}</td>
       <td>{{ Math.round(props.item.MemoryUsage.Sys / 1024 / 1024) }} Mo</td>
       <td>{{ props.item.MemoryUsage.NumGC }}</td>
@@ -30,6 +31,7 @@ export default Vue.extend({
         },
         { text: "MeshID", value: "mesh_id" },
         { text: "Hostname", value: "hostname" },
+        { text: "Services", value: "services" },
         { text: "Goroutines", value: "goroutines" },
         { text: "Memory Usage", value: "memusage" },
         { text: "GC count", value: "numGc" },
