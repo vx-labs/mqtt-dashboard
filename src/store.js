@@ -39,6 +39,14 @@ const store = new Vuex.Store({
     peers: [],
   },
   mutations: {
+    reset_state(state) {
+      state.sessions = [];
+      state.subscriptions = [];
+      state.peers = [];
+    },
+    reset_peers(state) {
+      state.peers = [];
+    },
     reset_sessions(state) {
       state.sessions = [];
     },
@@ -167,13 +175,13 @@ const store = new Vuex.Store({
         state.connection.credentials,
       );
       commit('set_mqtt_connection_pending');
-      commit('reset_sessions');
-      commit('reset_subscriptions');
+      commit('reset_state');
       mqttSession.on('error', function(err) {
         console.log('error', err);
       });
       mqttSession.on('reconnect', function() {
         commit('set_mqtt_connection_pending');
+        commit('reset_state');
       });
       mqttSession.on('connect', function() {
         commit('set_mqtt_connection_online');
