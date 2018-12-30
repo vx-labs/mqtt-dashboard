@@ -27,6 +27,7 @@ const store = new Vuex.Store({
     connection: {
       online: false,
       pending: false,
+      error: undefined,
       credentials: {
         username: undefined,
         password: undefined,
@@ -64,6 +65,9 @@ const store = new Vuex.Store({
     },
     set_mqtt_broker(state, broker) {
       state.connection.broker = broker;
+    },
+    set_mqtt_connection_error(state, err) {
+      state.connection.error = err;
     },
     set_mqtt_credentials(state, { username, password }) {
       state.connection.credentials.username = username;
@@ -164,6 +168,17 @@ const store = new Vuex.Store({
     UnselectSession({ commit }) {
       commit('unselect_session');
     },
+    async MQTTStop({ commit, state }) {
+      if (state.connection.session !== undefined) {
+        await new Promise(resolve => {
+          state.connection.session.end(false, resolve);
+          commit('set_mqtt_connection_offline');
+          commit('set_mqtt_connection_error', '');
+          commit('reset_state');
+          commit('set_mqtt_session', undefined);
+        });
+      }
+    },
     async MQTTConnect({ state, commit }) {
       if (state.connection.session !== undefined) {
         await new Promise(resolve => {
@@ -176,14 +191,21 @@ const store = new Vuex.Store({
       );
       commit('set_mqtt_connection_pending');
       commit('reset_state');
+      mqttSession.on('end', function() {
+        commit('set_mqtt_connection_offline');
+        commit('set_mqtt_connection_error', '');
+        commit('reset_state');
+        commit('set_mqtt_session', undefined);
+      });
       mqttSession.on('error', function(err) {
-        console.log('error', err);
+        commit('set_mqtt_connection_error', err.code)
       });
       mqttSession.on('reconnect', function() {
         commit('set_mqtt_connection_pending');
         commit('reset_state');
       });
       mqttSession.on('connect', function() {
+        commit('set_mqtt_connection_error', '');
         commit('set_mqtt_connection_online');
       });
       mqttSession.on('offline', function() {
@@ -252,6 +274,15 @@ const store = new Vuex.Store({
     },
   },
   getters: {
+    mqtt_error: state => {
+      const err = state.connection.error;
+      if (err === undefined || err === '') {
+        return undefined;
+      }
+      return {
+        "4": "Connection Refused, bad user name or password",
+      }[err]
+    },
     mqtt_connected: state => state.connection.online,
     mqtt_pending: state => state.connection.pending,
     selectedSession: state => state.ui.selectedSession,
