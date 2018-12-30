@@ -6,6 +6,7 @@
       <td>{{ props.item.Hostname }}</td>
       <td>{{ getTimeFromNow(props.item.Started) }}</td>
       <td>{{ props.item.Services.join(', ') }}</td>
+      <td>{{ sessions(props.item.MeshID).length }}</td>
       <td>{{ props.item.ComputeUsage.Goroutines }}</td>
       <td>{{ Math.round(props.item.MemoryUsage.Sys / 1024 / 1024) }} Mo</td>
       <td>{{ props.item.MemoryUsage.NumGC }}</td>
@@ -35,6 +36,7 @@ export default Vue.extend({
         { text: "Hostname", value: "hostname" },
         { text: "Uptime", value: "uptime" },
         { text: "Services", value: "services" },
+        { text: "Sessions", value: "sessions" },
         { text: "Goroutines", value: "goroutines" },
         { text: "Memory Usage", value: "memusage" },
         { text: "GC count", value: "numGc" }
@@ -64,6 +66,9 @@ export default Vue.extend({
     },
     formatID(id) {
       return id.slice(0, 8);
+    },
+    sessions(id) {
+      return this.$store.getters.sessionsByPeer(id);
     }
   }
 });

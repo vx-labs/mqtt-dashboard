@@ -277,6 +277,10 @@ const store = new Vuex.Store({
       state.subscriptions.filter(
         elt => id !== undefined && elt.SessionID === id,
       ),
+    sessionsByPeer: state => id =>
+      state.sessions.filter(
+        elt => id !== undefined && elt.Peer === id,
+      ),
   },
 });
 loadCredentials(store);
