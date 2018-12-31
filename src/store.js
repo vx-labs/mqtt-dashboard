@@ -4,19 +4,35 @@ import { connect } from 'mqtt';
 
 Vue.use(Vuex);
 
+function persist(key, data) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+function load(key, cb) {
+  try {
+    const data = JSON.parse(localStorage.getItem(key));
+    cb(data);
+  } catch {
+    localStorage.removeItem(key);
+  }
+}
 function persistCredentials(credentials) {
-  localStorage.setItem('state_mqtt_credentials', JSON.stringify(credentials));
+  persist('state_mqtt_credentials', credentials);
 }
 function loadCredentials(store) {
-  try {
-    const credentials = JSON.parse(
-      localStorage.getItem('state_mqtt_credentials'),
-    );
+  load('state_mqtt_credentials', credentials => {
     store.commit('set_mqtt_credentials', credentials);
-    store.dispatch('MQTTConnect');
-  } catch {
-    localStorage.removeItem('set_mqtt_credentials');
-  }
+  });
+}
+function persistBroker(credentials) {
+  persist('state_mqtt_broker', credentials);
+}
+function isStringSet(value) {
+  return value !== undefined && value !== null && value.length > 0;
+}
+function loadBroker(store) {
+  load('state_mqtt_broker', broker => {
+    store.commit('set_mqtt_broker', broker);
+  });
 }
 
 const store = new Vuex.Store({
@@ -32,7 +48,7 @@ const store = new Vuex.Store({
         username: undefined,
         password: undefined,
       },
-      broker: 'wss://broker.iot.cloud.vx-labs.net:443/mqtt',
+      broker: undefined,
       session: undefined,
     },
     sessions: [],
@@ -65,6 +81,7 @@ const store = new Vuex.Store({
     },
     set_mqtt_broker(state, broker) {
       state.connection.broker = broker;
+      persistBroker(broker);
     },
     set_mqtt_connection_error(state, err) {
       state.connection.error = err;
@@ -106,7 +123,7 @@ const store = new Vuex.Store({
         state.sessions.push(session);
         return;
       }
-      Vue.set(state.sessions, existing,  session);
+      Vue.set(state.sessions, existing, session);
     },
     delete_session(state, session) {
       const existing = state.sessions.findIndex(s => s.ID === session);
@@ -185,6 +202,11 @@ const store = new Vuex.Store({
           state.connection.session.end(false, resolve);
         });
       }
+      if (
+        !isStringSet(state.connection.broker)
+      ) {
+        return;
+      }
       const mqttSession = connect(
         state.connection.broker,
         state.connection.credentials,
@@ -198,7 +220,8 @@ const store = new Vuex.Store({
         commit('set_mqtt_session', undefined);
       });
       mqttSession.on('error', function(err) {
-        commit('set_mqtt_connection_error', err.code)
+        console.log(`MQTT session encountered an error: ${err}`);
+        commit('set_mqtt_connection_error', err.code);
       });
       mqttSession.on('reconnect', function() {
         commit('set_mqtt_connection_pending');
@@ -280,8 +303,8 @@ const store = new Vuex.Store({
         return undefined;
       }
       return {
-        "4": "Connection Refused, bad user name or password",
-      }[err]
+        '4': 'Connection Refused, bad user name or password',
+      }[err];
     },
     mqtt_connected: state => state.connection.online,
     mqtt_pending: state => state.connection.pending,
@@ -309,10 +332,10 @@ const store = new Vuex.Store({
         elt => id !== undefined && elt.SessionID === id,
       ),
     sessionsByPeer: state => id =>
-      state.sessions.filter(
-        elt => id !== undefined && elt.Peer === id,
-      ),
+      state.sessions.filter(elt => id !== undefined && elt.Peer === id),
   },
 });
 loadCredentials(store);
+loadBroker(store);
+store.dispatch('MQTTConnect');
 export default store;
