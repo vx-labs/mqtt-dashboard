@@ -242,7 +242,6 @@ const store = new Vuex.Store({
           if (payload.length > 0) {
             try {
               const session = JSON.parse(payload);
-              session.ClientID = atob(session.ClientID);
               if (
                 session.WillTopic !== undefined &&
                 session.WillTopic.length > 0
@@ -257,7 +256,8 @@ const store = new Vuex.Store({
               }
               commit('create_session', session);
             } catch (err) {
-              console.log(`failed to parse payload: ${payload}`);
+              console.log(`failed to parse payload: ${err}`);
+              console.log(`payload was: ${payload}`);
             }
           } else {
             const id = topic.slice(sessionPrefix.length);
@@ -270,7 +270,8 @@ const store = new Vuex.Store({
               subscription.Pattern = atob(subscription.Pattern);
               commit('create_subscription', subscription);
             } catch (err) {
-              console.log(`failed to parse payload: ${payload}`);
+              console.log(`failed to parse payload: ${err}`);
+              console.log(`payload was: ${payload}`);
             }
           } else {
             const id = topic.slice(subscriptionPrefix.length);
@@ -282,7 +283,8 @@ const store = new Vuex.Store({
               const peer = JSON.parse(payload);
               commit('create_peer', peer);
             } catch (err) {
-              console.log(`failed to parse payload: ${payload}`);
+              console.log(`failed to parse payload: ${err}`);
+              console.log(`payload was: ${payload}`);
             }
           } else {
             const id = topic.slice(subscriptionPrefix.length);
