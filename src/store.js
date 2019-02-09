@@ -189,11 +189,11 @@ const store = new Vuex.Store({
       if (state.connection.session !== undefined) {
         await new Promise(resolve => {
           state.connection.session.end(false, resolve);
-          commit('set_mqtt_connection_offline');
-          commit('set_mqtt_connection_error', '');
-          commit('reset_state');
-          commit('set_mqtt_session', undefined);
         });
+        commit('set_mqtt_connection_offline');
+        commit('set_mqtt_connection_error', '');
+        commit('reset_state');
+        commit('set_mqtt_session', undefined);
       }
     },
     async MQTTConnect({ state, commit }) {
