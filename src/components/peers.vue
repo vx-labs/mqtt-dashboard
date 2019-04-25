@@ -5,7 +5,7 @@
       <td>{{ props.item.Hostname }}</td>
       <td>{{ getTimeFromNow(props.item.Started) }}</td>
       <td>{{ props.item.Services.join(', ') }}</td>
-      <td>{{ sessions(props.item.MeshID).length }}</td>
+      <td>{{ sessions(props.item.ID).length }}</td>
       <td>{{ props.item.ComputeUsage.Goroutines }}</td>
       <td>{{ Math.round(props.item.MemoryUsage.Sys / 1024 / 1024) }} Mo</td>
       <td>{{ props.item.MemoryUsage.NumGC }}</td>
