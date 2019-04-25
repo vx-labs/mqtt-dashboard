@@ -2,7 +2,6 @@
   <v-data-table :headers="headers" :items="peers" class="elevation-1">
     <template slot="items" slot-scope="props">
       <td>{{ formatID(props.item.ID) }}</td>
-      <td>{{ props.item.MeshID }}</td>
       <td>{{ props.item.Hostname }}</td>
       <td>{{ getTimeFromNow(props.item.Started) }}</td>
       <td>{{ props.item.Services.join(', ') }}</td>
@@ -32,7 +31,6 @@ export default Vue.extend({
           sortable: false,
           value: "id"
         },
-        { text: "MeshID", value: "mesh_id" },
         { text: "Hostname", value: "hostname" },
         { text: "Uptime", value: "uptime" },
         { text: "Services", value: "services" },
