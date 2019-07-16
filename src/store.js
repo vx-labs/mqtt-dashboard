@@ -149,6 +149,9 @@ const store = new Vuex.Store({
       }
       Vue.set(state.subscriptions, existing, subscription);
     },
+    set_subscriptions(state, subscriptions) {
+      state.subscriptions = subscriptions;
+    },
     delete_subscription(state, subscription) {
       const existing = state.subscriptions.findIndex(
         s => s.ID === subscription,
@@ -184,6 +187,14 @@ const store = new Vuex.Store({
               if (elt.Services === undefined) {
                 elt.Services = [];
               }
+              return elt;
+            }));
+        });
+      }, 3000);
+      setInterval(() => {
+        Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/subscriptions/').then((subscriptions) => {
+          commit('set_subscriptions', subscriptions.data
+            .map(elt => {
               return elt;
             }));
         });
