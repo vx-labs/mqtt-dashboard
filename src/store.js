@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import { connect } from 'mqtt';
+import Axios from 'axios';
 
 Vue.use(Vuex);
 
@@ -110,12 +111,18 @@ const store = new Vuex.Store({
       }
       Vue.set(state.peers, existing, peer);
     },
+    set_peers(state, peers) {
+      state.peers = peers;
+    },
     delete_peer(state, peer) {
       const existing = state.peers.findIndex(s => s.ID === peer);
       if (existing === -1) {
         return;
       }
       state.peers = state.peers.filter(s => s.ID !== peer);
+    },
+    set_sessions(state, sessions) {
+      state.sessions = sessions;
     },
     create_session(state, session) {
       const existing = state.sessions.findIndex(s => s.ID === session.ID);
@@ -155,6 +162,33 @@ const store = new Vuex.Store({
     },
   },
   actions: {
+    async startPoll({ commit }) {
+      setInterval(() => {
+        Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/sessions/').then((sessions) => {
+          commit('set_sessions', sessions.data
+          .map(elt => {
+            if (elt.WillPayload !== "") {
+              elt.WillPayload = atob(elt.WillPayload)
+            }
+            if (elt.WillTopic !== "") {
+              elt.WillTopic = atob(elt.WillTopic)
+            }
+            return elt;
+          }));
+        });
+      }, 3000);
+      setInterval(() => {
+        Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/peers/').then((peers) => {
+          commit('set_peers', peers.data
+            .map(elt => {
+              if (elt.Services === undefined) {
+                elt.Services = [];
+              }
+              return elt;
+            }));
+        });
+      }, 3000);
+    },
     async SetMQTTCredentials({ commit }, { username, password }) {
       commit('set_mqtt_credentials', { username, password });
     },
@@ -184,118 +218,6 @@ const store = new Vuex.Store({
     },
     UnselectSession({ commit }) {
       commit('unselect_session');
-    },
-    async MQTTStop({ commit, state }) {
-      if (state.connection.session !== undefined) {
-        await new Promise(resolve => {
-          state.connection.session.end(false, resolve);
-        });
-        commit('set_mqtt_connection_offline');
-        commit('set_mqtt_connection_error', '');
-        commit('reset_state');
-        commit('set_mqtt_session', undefined);
-      }
-    },
-    async MQTTConnect({ state, commit }) {
-      if (state.connection.session !== undefined) {
-        await new Promise(resolve => {
-          state.connection.session.end(false, resolve);
-        });
-      }
-      if (
-        !isStringSet(state.connection.broker)
-      ) {
-        return;
-      }
-      const mqttSession = connect(
-        state.connection.broker,
-        state.connection.credentials,
-      );
-      commit('set_mqtt_connection_pending');
-      commit('reset_state');
-      mqttSession.on('end', function() {
-        commit('set_mqtt_connection_offline');
-        commit('set_mqtt_connection_error', '');
-        commit('reset_state');
-        commit('set_mqtt_session', undefined);
-      });
-      mqttSession.on('error', function(err) {
-        console.log(`MQTT session encountered an error: ${err}`);
-        commit('set_mqtt_connection_error', err.code);
-      });
-      mqttSession.on('reconnect', function() {
-        commit('set_mqtt_connection_pending');
-        commit('reset_state');
-      });
-      mqttSession.on('connect', function() {
-        commit('set_mqtt_connection_error', '');
-        commit('set_mqtt_connection_online');
-      });
-      mqttSession.on('offline', function() {
-        commit('set_mqtt_connection_offline');
-      });
-      mqttSession.on('message', (topic, payload) => {
-        const sessionPrefix = '$SYS/sessions/';
-        const subscriptionPrefix = '$SYS/subscriptions/';
-        const peersPrefix = '$SYS/peers/';
-        if (topic.startsWith(sessionPrefix)) {
-          if (payload.length > 0) {
-            try {
-              const session = JSON.parse(payload);
-              if (
-                session.WillTopic !== undefined &&
-                session.WillTopic.length > 0
-              ) {
-                session.WillTopic = atob(session.WillTopic);
-              }
-              if (
-                session.WillPayload !== undefined &&
-                session.WillPayload.length > 0
-              ) {
-                session.WillPayload = atob(session.WillPayload);
-              }
-              commit('create_session', session);
-            } catch (err) {
-              console.log(`failed to parse payload: ${err}`);
-              console.log(`payload was: ${payload}`);
-            }
-          } else {
-            const id = topic.slice(sessionPrefix.length);
-            commit('delete_session', id);
-          }
-        } else if (topic.startsWith(subscriptionPrefix)) {
-          if (payload.length > 0) {
-            try {
-              const subscription = JSON.parse(payload);
-              subscription.Pattern = atob(subscription.Pattern);
-              commit('create_subscription', subscription);
-            } catch (err) {
-              console.log(`failed to parse payload: ${err}`);
-              console.log(`payload was: ${payload}`);
-            }
-          } else {
-            const id = topic.slice(subscriptionPrefix.length);
-            commit('delete_subscription', id);
-          }
-        } else if (topic.startsWith(peersPrefix)) {
-          if (payload.length > 0) {
-            try {
-              const peer = JSON.parse(payload);
-              commit('create_peer', peer);
-            } catch (err) {
-              console.log(`failed to parse payload: ${err}`);
-              console.log(`payload was: ${payload}`);
-            }
-          } else {
-            const id = topic.slice(subscriptionPrefix.length);
-            commit('delete_peer', id);
-          }
-        }
-      });
-      mqttSession.subscribe('$SYS/sessions/+', { qos: 1 });
-      mqttSession.subscribe('$SYS/subscriptions/+', { qos: 1 });
-      mqttSession.subscribe('$SYS/peers/+', { qos: 1 });
-      commit('set_mqtt_session', mqttSession);
     },
   },
   getters: {
@@ -339,5 +261,5 @@ const store = new Vuex.Store({
 });
 loadCredentials(store);
 loadBroker(store);
-store.dispatch('MQTTConnect');
+store.dispatch('startPoll');
 export default store;
