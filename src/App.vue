@@ -6,10 +6,8 @@
         <span class="font-weight-light">DASHBOARD</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <status></status>
       <settings></settings>
       <subscriptions></subscriptions>
-      <disconnectedDialog/>
     </v-toolbar>
     <v-content>
       <v-container fluid>
@@ -23,15 +21,11 @@
 <script>
 import settings from "@/components/settings.vue";
 import subscriptions from "@/components/subscriptions.vue";
-import status from "@/components/status.vue";
-import disconnectedDialog from "@/components/disconnectedDialog.vue";
 export default {
   name: "App",
   components: {
     settings,
     subscriptions,
-    status,
-    disconnectedDialog
   }
 };
 </script>

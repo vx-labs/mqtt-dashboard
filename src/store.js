@@ -165,39 +165,54 @@ const store = new Vuex.Store({
     },
   },
   actions: {
-    async startPoll({ commit }) {
-      setInterval(() => {
-        Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/sessions/').then((sessions) => {
-          commit('set_sessions', sessions.data
+    async refreshSessions({ commit }) {
+      Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/sessions/').then((sessions) => {
+        commit('set_sessions', sessions.data
           .map(elt => {
-            if (elt.WillPayload !== "") {
+            if (elt.WillPayload && elt.WillPayload !== "") {
               elt.WillPayload = atob(elt.WillPayload)
             }
-            if (elt.WillTopic !== "") {
+            if (elt.WillTopic && elt.WillTopic !== "") {
               elt.WillTopic = atob(elt.WillTopic)
             }
             return elt;
           }));
-        });
+      });
+    },
+    async refreshPeers({ commit }) {
+      Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/peers/').then((peers) => {
+        commit('set_peers', peers.data
+          .map(elt => {
+            if (elt.Services === undefined) {
+              elt.Services = [];
+            }
+            return elt;
+          }));
+      });
+    },
+    async refreshSubscriptions({ commit }) {
+      Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/subscriptions/').then((subscriptions) => {
+        commit('set_subscriptions', subscriptions.data
+          .map(elt => {
+            if (elt.Pattern && elt.Pattern !== "") {
+              elt.Pattern = atob(elt.Pattern)
+            }
+            return elt;
+          }));
+      });
+    },
+    async startPoll({ dispatch }) {
+      await dispatch('refreshSessions')
+      await dispatch('refreshPeers')
+      await dispatch('refreshSubscriptions')
+      setInterval(() => {
+        dispatch('refreshSessions')
       }, 3000);
       setInterval(() => {
-        Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/peers/').then((peers) => {
-          commit('set_peers', peers.data
-            .map(elt => {
-              if (elt.Services === undefined) {
-                elt.Services = [];
-              }
-              return elt;
-            }));
-        });
+        dispatch('refreshPeers')
       }, 3000);
       setInterval(() => {
-        Axios.get('https://broker-api.iot.cloud.vx-labs.net/v1/subscriptions/').then((subscriptions) => {
-          commit('set_subscriptions', subscriptions.data
-            .map(elt => {
-              return elt;
-            }));
-        });
+        dispatch('refreshSubscriptions')
       }, 3000);
     },
     async SetMQTTCredentials({ commit }, { username, password }) {
