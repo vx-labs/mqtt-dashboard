@@ -7,7 +7,7 @@
       <td>{{ props.item.Services.join(', ') }}</td>
       <td>{{ sessions(props.item.ID).length }}</td>
       <td>{{ props.item.ComputeUsage.Goroutines }}</td>
-      <td>{{ Math.round(props.item.MemoryUsage.Sys / 1024 / 1024) }} Mo</td>
+      <td>{{ Math.round(props.item.MemoryUsage.Alloc / 1024 / 1024) }} Mo</td>
       <td>{{ props.item.MemoryUsage.NumGC }}</td>
     </template>
   </v-data-table>
